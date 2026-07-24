@@ -1,0 +1,127 @@
+<h2>DESCRIPTION</h2>
+
+<em>r.in.geoglam</em> lists and downloads raster maps published by the
+<a href="https://cropmonitor.org/">GEOGLAM Crop Monitor</a> (AMIS and
+Early Warning) ArcGIS tile server. The server publishes one map service
+per crop (or the multi-crop <em>Synthesis</em> product) and per monthly
+report, each available as an
+<a href="https://www.ogc.org/publications/standard/wmts/">OGC WMTS</a>
+tile layer. Internally <em>r.in.geoglam</em> reuses
+<em><a href="r.in.wms.html">r.in.wms</a></em> (driver
+<b>WMTS_GRASS</b>) to fetch and reproject the RGB tiles.
+
+<p>
+The tile server only serves pre-rendered cartography (a handful of
+fixed legend colours), not the underlying condition codes.
+<em>r.in.geoglam</em> therefore reads the service's own ArcGIS legend
+(crop condition class names and their exact swatch colours), classifies
+every pixel to the nearest legend colour with <em>r.mapcalc</em>, and
+discards the intermediate RGB bands. The output is a single categorical
+(CELL) raster with GEOGLAM category labels (<em>r.category</em>) and
+the original legend colours (<em>r.colors</em>) attached directly to
+the map &mdash; not the raw imagery.
+
+<p>
+Use the <b>-l</b> flag to list all crop/year/month combinations
+currently published by the server:
+
+<div class="code"><pre>
+r.in.geoglam -l
+</pre></div>
+
+<p>
+To download a dataset, set <b>crop</b>, <b>year</b>, <b>month</b> and
+<b>output</b>. By default the data is clipped to the current
+computational region:
+
+<div class="code"><pre>
+g.region n=40 s=30 e=40 w=20 res=0:06
+r.in.geoglam crop=Synthesis year=2023 month=10 output=synthesis_2023_10
+</pre></div>
+
+<p>
+Use the <b>-w</b> flag to instead download the whole extent of the
+dataset (the current computational region is left untouched):
+
+<div class="code"><pre>
+r.in.geoglam -w crop=Maize year=2026 month=06 output=maize_2026_06_world
+</pre></div>
+
+<h2>NOTES</h2>
+
+Category codes are fixed across all datasets, in decreasing order of
+severity, regardless of the order the server's legend happens to list
+them in:
+
+<div class="code"><pre>
+1  Exceptional
+2  Favourable
+3  Watch
+4  Poor
+5  Failure
+6  Out of Season
+7  No Data
+</pre></div>
+
+<p>
+Not every dataset uses every class (for example the <em>Synthesis</em>
+product has no <em>Failure</em> class, which only applies to Early
+Warning countries); only the classes actually present in a given
+service's legend are attached to its output raster.
+
+<p>
+Classification is a nearest-legend-colour match per pixel; a small
+number of anti-aliased boundary pixels between adjacent country
+polygons may be assigned to a neighbouring class. Pixels outside any
+rendered country polygon (ocean, no data tile) are NULL.
+
+<p>
+The list of available crop/year/month combinations, and each dataset's
+legend, are retrieved live from the server, so newly published reports
+(or legend changes) become available to <em>r.in.geoglam</em> without
+any change to the module.
+
+<h2>REQUIREMENTS</h2>
+
+<em>r.in.geoglam</em> requires <em>r.in.wms</em> and the
+<a href="https://gdal.org/en/stable/programs/gdalwarp.html">gdalwarp</a>
+and
+<a href="https://gdal.org/en/stable/programs/gdaltransform.html">gdaltransform</a>
+utilities from the GDAL/OGR library.
+
+<h2>EXAMPLES</h2>
+
+<h3>List available datasets</h3>
+
+<div class="code"><pre>
+r.in.geoglam -l
+</pre></div>
+
+<h3>Download wheat conditions for a region</h3>
+
+<div class="code"><pre>
+g.region n=55 s=45 e=40 w=20 res=0:06
+r.in.geoglam crop=Wheat year=2022 month=10 output=wheat_2022_10
+</pre></div>
+
+<h3>Download the global synthesis product</h3>
+
+<div class="code"><pre>
+r.in.geoglam -w crop=Synthesis year=2023 month=10 output=synthesis_2023_10_world
+</pre></div>
+
+<h2>SEE ALSO</h2>
+
+<em><a href="r.in.wms.html">r.in.wms</a>,
+<a href="r.category.html">r.category</a>,
+<a href="r.colors.html">r.colors</a>,
+<a href="r.mapcalc.html">r.mapcalc</a></em>
+
+<ul>
+<li><a href="https://cropmonitor.org/">GEOGLAM Crop Monitor</a></li>
+<li><a href="https://www.ogc.org/publications/standard/wmts/">OGC WMTS</a></li>
+</ul>
+
+<h2>AUTHOR</h2>
+
+Yann Chemin
